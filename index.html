@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Birds of Dunbar Quiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@700;800&family=Alegreya+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: friendly field-trip quiz, calm and clear
+   IDEA: a field-guide flash card — photo plate on top, name to recall below
+   PICTURE: the bird photo itself, large, framed like a guide plate
+   COLOUR and TYPE: white ground, deep spruce ink, goldfinch-yellow accent; Alegreya + Alegreya Sans
+   LAYOUT: one column card, photo then choices; results grid of missed birds */
+:root{color-scheme:light dark;
+--bg:light-dark(#ffffff,#0f1714);--ink:light-dark(#14231e,#e8efe9);--mute:light-dark(#5a6b64,#9fb0a8);
+--panel:light-dark(#f2f6f3,#17221e);--line:light-dark(#d5e0da,#2a3a34);--spruce:light-dark(#1d4a3c,#7cc4a6);
+--gold:#f2c230;--good:light-dark(#1f7a4d,#5fd39a);--bad:light-dark(#b3261e,#ff8a80)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.5 "Alegreya Sans",system-ui,sans-serif;overflow-x:clip}
+header{background:var(--spruce);color:light-dark(#fff,#0f1714);padding:18px max(5vw,16px)}
+.hwrap{max-width:860px;margin:auto;display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;justify-content:space-between}
+h1{font:800 clamp(28px,4vw,40px)/1.05 Alegreya,serif;margin:0}
+.modes{display:flex;gap:6px;background:rgba(0,0,0,.18);padding:4px;border-radius:999px}
+.modes button{border:0;background:none;color:inherit;font:600 15px "Alegreya Sans";padding:10px 16px;border-radius:999px;cursor:pointer;min-height:44px}
+.modes button[aria-pressed=true]{background:var(--gold);color:#14231e}
+main{max-width:860px;margin:auto;padding:20px max(4vw,14px) 48px}
+.bar{display:flex;gap:16px;align-items:center;font-size:15px;color:var(--mute);margin-bottom:12px}
+.track{flex:1;height:8px;background:var(--panel);border-radius:9px;overflow:hidden;border:1px solid var(--line)}
+.fill{height:100%;background:var(--gold);width:0;transition:width .3s}
+.plate{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px;position:relative}
+.plate img{display:block;width:100%;height:clamp(240px,52vh,480px);object-fit:contain;border-radius:8px;background:light-dark(#e7eee9,#0b120f)}
+.q{font:700 22px/1.2 Alegreya,serif;margin:18px 0 12px}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.opt{font:600 18px "Alegreya Sans";text-align:left;padding:14px 16px;min-height:56px;border:2px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;cursor:pointer;display:flex;gap:10px;align-items:center}
+.opt:hover:not(:disabled){border-color:var(--spruce)}
+.opt:focus-visible,.btn:focus-visible,input:focus-visible,.modes button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.opt kbd{font:600 13px "Alegreya Sans";color:var(--mute);border:1px solid var(--line);border-radius:5px;padding:1px 6px}
+.opt.right{border-color:var(--good);background:color-mix(in srgb,var(--good) 14%,var(--bg))}
+.opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,var(--bg))}
+.typed{display:flex;gap:10px;flex-wrap:wrap}
+.typed input{flex:1 1 240px;font:500 18px "Alegreya Sans";padding:12px 14px;min-height:52px;border:2px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+.btn{font:700 17px "Alegreya Sans";padding:12px 20px;min-height:52px;border-radius:10px;border:0;background:var(--spruce);color:light-dark(#fff,#0f1714);cursor:pointer}
+.btn.alt{background:var(--panel);color:var(--ink);border:2px solid var(--line)}
+.fb{min-height:30px;margin:14px 0 4px;font-size:18px;font-weight:700}
+.fb.good{color:var(--good)}.fb.bad{color:var(--bad)}
+.row{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
+.done{text-align:center;padding:10px 0}
+.big{font:800 clamp(48px,10vw,84px)/1 Alegreya,serif;color:var(--spruce);margin:8px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin:18px 0;text-align:left}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.card img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover}
+.card p{margin:0;padding:8px 10px;font-weight:700;font-size:15px}
+.card small{display:block;font-weight:400;color:var(--mute)}
+.hide{display:none!important}
+@media(max-width:600px){.opts{grid-template-columns:minmax(0,1fr)}.opt kbd{display:none}.plate img{height:clamp(220px,42vh,380px)}}
+@media(prefers-reduced-motion:reduce){.fill{transition:none}}
+</style>
+</head>
+<body>
+<header><div class="hwrap">
+<h1>Birds of Dunbar</h1>
+<div class="modes" role="group" aria-label="Answer mode">
+<button id="mChoice" aria-pressed="true">Multiple choice</button>
+<button id="mType" aria-pressed="false">Type the name</button>
+</div>
+</div></header>
+<main>
+<section id="play">
+<div class="bar"><span id="count">1 of 43</span><div class="track"><div class="fill" id="fill"></div></div><span id="score">0 correct</span></div>
+<div class="plate"><img id="photo" alt="Mystery bird"></div>
+<p class="q">What bird is this?</p>
+<div class="opts" id="opts"></div>
+<form class="typed hide" id="typed" autocomplete="off">
+<input id="guess" placeholder="Type the common name" aria-label="Common name">
+<button class="btn" type="submit">Check</button>
+<button class="btn alt" type="button" id="skip">Show me</button>
+</form>
+<div class="fb" id="fb" aria-live="polite"></div>
+<div class="row"><span style="color:var(--mute);font-size:15px" id="tip">Press 1–4 to answer, Enter for next</span><button class="btn hide" id="next">Next bird →</button></div>
+</section>
+<section id="done" class="done hide">
+<p class="q" style="margin:0">Your score</p>
+<div class="big" id="final"></div>
+<p id="msg"></p>
+<div class="row" style="justify-content:center">
+<button class="btn" id="retry">Practise the ones I missed</button>
+<button class="btn alt" id="again">Start over with all birds</button>
+</div>
+<div id="missedWrap"><p class="q" style="text-align:left">Birds to review</p><div class="grid" id="missed"></div></div>
+</section>
+</main>
+<script>
+{
+const B=[
+["Northern Cardinal","s02","bright"],["Blue Jay","s03","bright"],["American Robin","s04","bright"],["American Crow","s05","black"],
+["Northern Mockingbird","s06","gray"],["Turkey Vulture","s07","raptor"],["Black Vulture","s08","raptor"],["Mourning Dove","s09","dove"],
+["Rock Dove","s10","dove"],["House Sparrow","s11","small"],["European Starling","s12","black"],["Common Grackle","s13","black"],
+["Carolina Chickadee","s14","gray"],["Tufted Titmouse","s15","gray"],["House Finch","s16","small"],["American Goldfinch","s17","small"],
+["Mallard","s18","water"],["Canada Goose","s19","water"],["Carolina Wren","s20","small"],["Brown Creeper","s21","trunk"],
+["Downy Woodpecker","s22","trunk"],["Dark-eyed Junco","s23","small"],["Red-winged Blackbird","s24","black"],["Red-tailed Hawk","s25","raptor"],
+["Ruby-throated Hummingbird","s26","misc"],["Green Heron","s27","water"],["Great Blue Heron","s28","water"],["Belted Kingfisher","s29","water"],
+["Cliff Swallow","s30","misc"],["Eastern Kingbird","s31","gray"],["Gray Catbird","s32","gray"],["Great Horned Owl","s33","raptor"],
+["Cooper's Hawk","s34","raptor"],["Indigo Bunting","s35","bright"],["Wild Turkey","s36","misc"],["Eastern Screech Owl","s37","raptor"],
+["Northern Flicker","s38","trunk"],["Cedar Waxwing","s39","gray"],["Sharp-shinned Hawk","s40","raptor"],["Red-bellied Woodpecker","s41","trunk"],
+["Eastern Bluebird","s42","bright"],["Song Sparrow","s43","small"],["Chipping Sparrow","s44","small"]
+].map(([name,img,group])=>({name,img:"img/"+img+".jpg",group}));
+const ALIAS={"Rock Dove":["rock pigeon","pigeon"],"Ruby-throated Hummingbird":["ruby throated hummingbird","hummingbird"],"Cooper's Hawk":["coopers hawk"],"Canada Goose":["canadian goose"],"Northern Cardinal":["cardinal"],"Northern Mockingbird":["mockingbird"],"American Robin":["robin"]};
+const $=id=>document.getElementById(id);
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const norm=s=>s.toLowerCase().replace(/[^a-z]/g,"");
+const lev=(a,b)=>{const d=Array.from({length:a.length+1},(_,i)=>[i]);for(let j=1;j<=b.length;j++)d[0][j]=j;for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return d[a.length][b.length]};
+let mode="choice",deck=[],i=0,right=0,missed=[],answered=false;
+B.forEach(b=>{const im=new Image();im.src=b.img});
+function start(list){deck=shuffle(list);i=0;right=0;missed=[];$("play").classList.remove("hide");$("done").classList.add("hide");show()}
+function choices(b){
+  const same=shuffle(B.filter(x=>x.group===b.group&&x!==b)).slice(0,2);
+  const rest=shuffle(B.filter(x=>x!==b&&!same.includes(x))).slice(0,3-same.length);
+  return shuffle([b,...same,...rest]);
+}
+function show(){
+  const b=deck[i];answered=false;
+  $("photo").src=b.img;$("photo").alt="Mystery bird, photo "+(i+1);
+  $("count").textContent=(i+1)+" of "+deck.length;
+  $("score").textContent=right+" correct";
+  $("fill").style.width=(i/deck.length*100)+"%";
+  $("fb").textContent="";$("fb").className="fb";$("next").classList.add("hide");
+  $("opts").classList.toggle("hide",mode!=="choice");$("typed").classList.toggle("hide",mode!=="type");
+  $("tip").textContent=mode==="choice"?"Press 1–4 to answer, Enter for next":"Small spelling slips are accepted";
+  if(mode==="choice"){
+    $("opts").innerHTML=choices(b).map((c,k)=>`<button class="opt" data-n="${c.name}"><kbd>${k+1}</kbd>${c.name}</button>`).join("");
+  }else{$("guess").value="";$("guess").disabled=false;$("guess").focus()}
+}
+function finish(ok,b,extra){
+  answered=true;
+  if(ok)right++;else missed.push(b);
+  $("score").textContent=right+" correct";
+  $("fb").className="fb "+(ok?"good":"bad");
+  $("fb").textContent=ok?(extra||"Correct! "+b.name+"."):"It's a "+b.name+".";
+  $("next").classList.remove("hide");$("next").textContent=i+1<deck.length?"Next bird →":"See my score";$("next").focus();
+}
+$("opts").addEventListener("click",e=>{
+  const o=e.target.closest(".opt");if(!o||answered)return;
+  const b=deck[i],ok=o.dataset.n===b.name;
+  for(const x of $("opts").children){x.disabled=true;if(x.dataset.n===b.name)x.classList.add("right")}
+  if(!ok)o.classList.add("wrong");
+  finish(ok,b);
+});
+$("typed").addEventListener("submit",e=>{
+  e.preventDefault();if(answered)return;
+  const b=deck[i],g=norm($("guess").value);if(!g)return;
+  const targets=[b.name,...(ALIAS[b.name]||[])].map(norm);
+  const exact=targets.includes(g),close=!exact&&targets.some(t=>lev(g,t)<=Math.max(1,Math.floor(t.length/8)));
+  $("guess").disabled=true;
+  finish(exact||close,b,close?"Close enough! It's spelled "+b.name+".":null);
+});
+$("skip").addEventListener("click",()=>{if(!answered){$("guess").disabled=true;finish(false,deck[i])}});
+function next(){if(!answered)return;i++;if(i<deck.length)show();else end()}
+$("next").addEventListener("click",next);
+function end(){
+  $("fill").style.width="100%";
+  $("play").classList.add("hide");$("done").classList.remove("hide");
+  $("final").textContent=right+" / "+deck.length;
+  const p=right/deck.length;
+  $("msg").textContent=p===1?"A perfect round — every bird named!":p>=.8?"Great birding! Just a few to brush up on.":p>=.5?"Good start. Review the birds below and try them again.":"Keep practising — the birds below are a good place to start.";
+  $("retry").classList.toggle("hide",!missed.length);$("missedWrap").classList.toggle("hide",!missed.length);
+  $("missed").innerHTML=missed.map(b=>`<div class="card"><img src="${b.img}" alt="${b.name}"><p>${b.name}</p></div>`).join("");
+}
+$("retry").addEventListener("click",()=>start(missed));
+$("again").addEventListener("click",()=>start(B));
+function setMode(m){mode=m;$("mChoice").setAttribute("aria-pressed",m==="choice");$("mType").setAttribute("aria-pressed",m==="type");if(!answered)show()}
+$("mChoice").addEventListener("click",()=>setMode("choice"));
+$("mType").addEventListener("click",()=>setMode("type"));
+document.addEventListener("keydown",e=>{
+  if($("play").classList.contains("hide"))return;
+  if(e.target.tagName==="INPUT")return;
+  if(e.key==="Enter"&&answered&&e.target!==$("next")){e.preventDefault();next()}
+  if(mode==="choice"&&!answered&&/^[1-4]$/.test(e.key)){$("opts").children[e.key-1]?.click()}
+});
+start(B);
+}
+</script>
+</body>
+</html>
